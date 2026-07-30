@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Atlantic City</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>ATLANTIC CITY</h2>
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="buscar.html">Clientes</a>
+            <a href="campanas.html">Campañas</a>
+            <a href="reportes.html" id="menuReportes">Reportes</a>
+            <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
+        </div>
+    </nav>
+    
+    <div class="main-content">
+        <h1 id="saludoUsuario">Buen día 👋</h1>
+        <p>Resumen general del programa de fidelización</p>
+        
+        <div class="grid-summary">
+            <div class="card" style="border-top-color: green;">
+                <h3 id="txtTotalClientes">...</h3>
+                <p>Total de Clientes</p>
+            </div>
+            <div class="card" style="border-top-color: orange;">
+                <h3 id="txtNuevosHoy">...</h3>
+                <p>Clientes Nuevos (hoy)</p>
+            </div>
+            <div class="card" style="border-top-color: blue;">
+                <h3 id="txtCampanasActivas">...</h3>
+                <p>Campañas Activas</p>
+            </div>
+            <div class="card" style="border-top-color: purple;">
+                <h3 id="txtNivelOro">...</h3>
+                <p>Clientes Nivel Oro+</p>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="window.location.href='buscar.html'">🔍 Buscar Cliente</button>
+        <button class="btn-primary" id="btnNuevoRegistro" style="background-color: #fff; color: #0d1c33; border: 1px solid #0d1c33;" onclick="window.location.href='registro.html'">+ Nuevo Registro</button>
+    </div>
+
+    <script>
+        const rol = localStorage.getItem('rolUsuario');
+        const usuario = localStorage.getItem('usuarioLogueado');
+
+        async function cargarDashboard() {
+            // Validar protección de sesión básica
+            if(!rol) { window.location.href = 'index.html'; return; }
+            
+            document.getElementById('saludoUsuario').innerText = `Buen día, ${usuario || 'Usuario'} 👋`;
+
+            // Aplicar Restricción de Marketing: No ve el botón "+ Nuevo Registro" en el dashboard
+            if (rol === 'marketing') {
+                document.getElementById('btnNuevoRegistro').style.display = 'none';
+            }
+            // Aplicar Restricción de Operario: No ve la pestaña de Reportes en el menú
+            if (rol === 'operario') {
+                document.getElementById('menuReportes').style.display = 'none';
+            }
+
+            try {
+                const res = await fetch('http://localhost:3000/api/dashboard/contadores');
+                const data = await res.json();
+                document.getElementById('txtTotalClientes').innerText = data.totalClientes.toLocaleString();
+                document.getElementById('txtNuevosHoy').innerText = data.nuevosHoy.toLocaleString();
+                document.getElementById('txtCampanasActivas').innerText = data.campanasActivas.toLocaleString();
+                document.getElementById('txtNivelOro').innerText = data.nivelOroMas.toLocaleString();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = cargarDashboard;
+    </script>
+</body>
+</html>

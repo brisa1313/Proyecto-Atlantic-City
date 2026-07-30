@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Registro - Atlantic City</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="main-content" style="max-width: 600px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <a href="dashboard.html" style="text-decoration: none; color: var(--primary-color);">← Volver al Dashboard</a>
+            <a href="#" onclick="cerrarSesion()" style="text-decoration: none; color: #ff4d4d; font-weight: bold;">Cerrar Sesión</a>
+        </div>
+        <h2>Nuevo Registro de Cliente</h2>
+        <p>Completa los datos del cliente para registrarlo en el programa de fidelización.</p>
+        
+        <div class="card" style="border-top: none; padding: 30px;">
+            <div class="input-group"> <label>Tipo de Documento</label> <select id="tipoDoc"><option>DNI</option><option>Carnet de Extranjería</option><option>Pasaporte</option></select> </div>
+            <div class="input-group"> <label>Número de Documento</label> <input type="text" id="numDoc"> </div>
+            <div class="input-group"> <label>Nombres</label> <input type="text" id="nombres"> </div>
+            <div class="input-group"> <label>Apellidos</label> <input type="text" id="apellidos"> </div>
+            <div class="input-group"> <label>Correo Electrónico</label> <input type="email" id="correo"> </div>
+            <div class="input-group"> <label>Teléfono</label> <input type="text" id="telefono"> </div>
+            <div class="input-group"> <label>Categoría Inicial</label> <select id="categoria"><option>Clásica</option><option>Plata</option><option>Oro</option><option>Platino</option></select> </div>
+            <br>
+            <button class="btn-primary" style="background-color: #555;" onclick="verificarDuplicado()">Verificar Duplicado</button>
+            <button class="btn-primary" id="btnRegistrar" disabled onclick="registrarCliente()">Registrar Cliente</button>
+        </div>
+    </div>
+
+    <script>
+        const rol = localStorage.getItem('rolUsuario');
+        if(!rol || rol === 'marketing') { window.location.href = 'dashboard.html'; }
+
+        async function verificarDuplicado() {
+            const doc = document.getElementById('numDoc').value;
+            if(!doc) return alert("Ingrese un documento");
+            const res = await fetch(`http://localhost:3000/api/clientes/verificar/${doc}`);
+            const data = await res.json();
+            if (data.existe) { alert("❌ Este documento ya existe."); document.getElementById('btnRegistrar').disabled = true; } 
+            else { alert("✅ Documento válido."); document.getElementById('btnRegistrar').disabled = false; }
+        }
+
+        async function registrarCliente() {
+            const cliente = {
+                tipo_documento: document.getElementById('tipoDoc').value,
+                numero_documento: document.getElementById('numDoc').value,
+                nombres: document.getElementById('nombres').value,
+                apellidos: document.getElementById('apellidos').value,
+                correo_electronico: document.getElementById('correo').value,
+                telefono: document.getElementById('telefono').value,
+                categoria_inicial: document.getElementById('categoria').value
+            };
+            const response = await fetch('http://localhost:3000/api/clientes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cliente)
+            });
+            if((await response.json()).success) { alert("¡Cliente guardado!"); window.location.href = 'dashboard.html'; }
+        }
+        function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

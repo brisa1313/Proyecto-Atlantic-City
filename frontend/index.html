@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Atlantic City</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-brand">
+            <div class="logo-placeholder"></div>
+            <h1>ATLANTIC CITY</h1>
+            <p>Plataforma de Fidelización de Clientes</p>
+        </div>
+        <div class="login-form-section">
+            <h2>Bienvenido</h2>
+            <p>Ingresa tus credenciales para continuar</p>
+            
+            <div class="input-group">
+                <label>Usuario</label>
+                <input type="text" id="txtUsuario" placeholder="usuario.atlantic">
+            </div>
+            
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="txtContrasena" placeholder="*********">
+            </div>
+            
+            <p id="lblError" style="color: red; display: none;">Usuario o contraseña incorrectos</p>
+            
+            <button class="btn-primary" onclick="iniciarSesion()">Ingresar</button>
+        </div>
+    </div>
+
+    <script>
+        async function iniciarSesion() {
+            const usuario = document.getElementById('txtUsuario').value;
+            const contrasena = document.getElementById('txtContrasena').value;
+            const lblError = document.getElementById('lblError');
+
+            lblError.style.display = 'none';
+
+            const response = await fetch('http://localhost:3000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, contrasena })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Guardamos el usuario y su respectivo rol de forma local
+                localStorage.setItem('usuarioLogueado', data.user.usuario);
+                localStorage.setItem('rolUsuario', data.user.role || data.user.rol); 
+                
+                window.location.href = 'dashboard.html';
+            } else {
+                lblError.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Campañas - Atlantic City</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .campana-row { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .edit-panel { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-top: 20px; display: none; }
+        .btn-delete-camp { background-color: #d9534f; color: white; border: none; padding: 6px 12px; font-size: 13px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>ATLANTIC CITY</h2>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="buscar.html">Clientes</a>
+            <a href="campanas.html" class="active">Campañas</a>
+            <a href="reportes.html" id="menuReportes">Reportes</a>
+            <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <h2>Gestión de Campañas Activas</h2>
+        <p>Visualiza y administra los requisitos corporativos de las campañas vigentes.</p>
+        
+        <div id="listaCampanas"></div>
+
+        <div id="formularioEdicion" class="edit-panel">
+            <h3>Editar Detalles de Campaña</h3>
+            <input type="hidden" id="editId">
+            <div class="input-group">
+                <label>Nombre de la Campaña</label>
+                <input type="text" id="editNombre">
+            </div>
+            <div class="input-group">
+                <label>Vigencia / Requisitos</label>
+                <input type="text" id="editVigencia">
+            </div>
+            <div class="input-group">
+                <label>Descripción Breve</label>
+                <input type="text" id="editDescripcion">
+            </div>
+            <br>
+            <button class="btn-primary" onclick="guardarCambiosCampana()">Guardar Cambios</button>
+            <button class="btn-primary" style="background-color: #777;" onclick="ocultarEditor()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const rol = localStorage.getItem('rolUsuario');
+
+        async function cargarCampanas() {
+            if(!rol) { window.location.href = 'index.html'; return; }
+            if (rol === 'operario') document.getElementById('menuReportes').style.display = 'none';
+
+            const res = await fetch('http://localhost:3000/api/campanas');
+            const campanas = await res.json();
+            const container = document.getElementById('listaCampanas');
+            container.innerHTML = '';
+
+            campanas.forEach(c => {
+                let botones = '';
+                // Operario solo mira. Admin y Marketing pueden editar/borrar
+                if (rol === 'admin' || rol === 'marketing') {
+                    botones = `
+                        <div style="display:flex; gap: 8px;">
+                            <button class="btn-primary" style="padding: 6px 12px; font-size: 13px;" onclick='mostrarEditor(${JSON.stringify(c)})'>Editar</button>
+                            <button class="btn-delete-camp" onclick="eliminarCampana(${c.id})">Borrar</button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div class="campana-row">
+                        <div>
+                            <strong>${c.nombre}</strong> — <span style="color: #777;">${c.vigencia}</span>
+                            <br><small>${c.descripcion || ''}</small>
+                        </div>
+                        ${botones}
+                    </div>
+                `;
+            });
+        }
+
+        function mostrarEditor(campana) {
+            document.getElementById('editId').value = campana.id;
+            document.getElementById('editNombre').value = campana.nombre;
+            document.getElementById('editVigencia').value = campana.vigencia;
+            document.getElementById('editDescripcion').value = campana.descripcion || '';
+            document.getElementById('formularioEdicion').style.display = 'block';
+        }
+
+        function ocultarEditor() { document.getElementById('formularioEdicion').style.display = 'none'; }
+
+        async function guardarCambiosCampana() {
+            const id = document.getElementById('editId').value;
+            const updated = {
+                nombre: document.getElementById('editNombre').value,
+                vigencia: document.getElementById('editVigencia').value,
+                descripcion: document.getElementById('editDescripcion').value
+            };
+            await fetch(`http://localhost:3000/api/campanas/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updated)
+            });
+            ocultarEditor();
+            cargarCampanas();
+        }
+
+        async function eliminarCampana(id) {
+            if(!confirm("¿Eliminar campaña?")) return;
+            await fetch(`http://localhost:3000/api/campanas/${id}`, { method: 'DELETE' });
+            cargarCampanas();
+        }
+
+        function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
+        cargarCampanas();
+    </script>
+</body>
+</html>
