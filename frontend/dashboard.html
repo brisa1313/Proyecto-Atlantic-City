@@ -13,12 +13,13 @@
             <a href="buscar.html">Clientes</a>
             <a href="campanas.html">Campañas</a>
             <a href="reportes.html" id="menuReportes">Reportes</a>
+            <a href="usuarios.html" id="menuUsuarios" style="display: none;">Usuarios</a>
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
         </div>
     </nav>
     
     <div class="main-content">
-        <h1 id="saludoUsuario">Buen día 👋</h1>
+        <h1 id="saludoUsuario">Bienvenido 👋</h1>
         <p>Resumen general del programa de fidelización</p>
         
         <div class="grid-summary">
@@ -49,18 +50,21 @@
         const usuario = localStorage.getItem('usuarioLogueado');
 
         async function cargarDashboard() {
-            // Validar protección de sesión básica
             if(!rol) { window.location.href = 'index.html'; return; }
             
-            document.getElementById('saludoUsuario').innerText = `Buen día, ${usuario || 'Usuario'} 👋`;
+            // Requerimiento: Mostrar "Bienvenido" seguido del nombre del trabajador
+            document.getElementById('saludoUsuario').innerText = `Bienvenido, ${usuario || 'Trabajador'} 👋`;
 
-            // Aplicar Restricción de Marketing: No ve el botón "+ Nuevo Registro" en el dashboard
+            // Validación de interfaz según rol
             if (rol === 'marketing') {
                 document.getElementById('btnNuevoRegistro').style.display = 'none';
             }
-            // Aplicar Restricción de Operario: No ve la pestaña de Reportes en el menú
             if (rol === 'operario') {
                 document.getElementById('menuReportes').style.display = 'none';
+            }
+            // Exclusividad: Solo el Administrador ve el acceso al panel de usuarios
+            if (rol === 'admin') {
+                document.getElementById('menuUsuarios').style.display = 'inline-block';
             }
 
             try {

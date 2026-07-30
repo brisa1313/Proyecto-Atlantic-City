@@ -2,12 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reportes Analíticos - Atlantic City</title>
+    <title>Reportes - Atlantic City</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: var(--primary-color); color: white; }
+        .report-grid { display: flex; gap: 30px; margin-top: 25px; }
+        .chart-box { flex: 1; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
+        .data-list { list-style: none; padding: 0; margin-top: 20px; text-align: left; }
+        .data-list li { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 1.05rem; }
+        .data-list li:last-child { border-bottom: none; }
+        .badge-cat { font-weight: bold; color: #1a73e8; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -17,71 +20,80 @@
             <a href="dashboard.html">Dashboard</a>
             <a href="buscar.html">Clientes</a>
             <a href="campanas.html">Campañas</a>
-            <a href="reportes.html" class="active">Reportes</a>
+            <a href="reportes.html" class="active" id="menuReportes">Reportes</a>
+            <a href="usuarios.html" id="menuUsuarios" style="display: none;">Usuarios</a>
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
         </div>
     </nav>
 
     <div class="main-content">
-        <h2>Reportes del Programa de Fidelización</h2>
-        <p>Distribución de Clientes Únicos por Nivel de Membresía corporativa:</p>
-        
-        <!-- Botón exclusivo para Marketing y Admin para exportar CSV -->
-        <button class="btn-primary" id="btnExportar" style="background-color: #28a745;" onclick="exportarClientesCSV()">📥 Exportar Datos de Clientes (CSV)</button>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>Nivel de Membresía</th>
-                    <th>Cantidad de Clientes Afiliados</th>
-                </tr>
-            </thead>
-            <tbody id="tablaReporte"></tbody>
-        </table>
+        <h2>Reportes Estadísticos</h2>
+        <p>Distribución demográfica de los niveles de clientes acumulados en tiempo real.</p>
+
+        <div class="report-grid">
+            <div class="chart-box">
+                <h3>Resumen por Categoría de Cliente</h3>
+                <br>
+                <p style="color: #666; font-size: 0.9rem;">Métricas procesadas directamente desde la base de datos de producción.</p>
+                
+                <ul class="data-list" id="listaReporte">
+                    <!-- Se inyecta dinámicamente con JavaScript -->
+                </ul>
+            </div>
+            <div class="chart-box" style="display: flex; flex-direction: column; justify-content: center; background-color: #0d1c33; color: white;">
+                <h2>Atlantic City Loyalty</h2>
+                <br>
+                <p style="opacity: 0.8; max-width: 80%; margin: 0 auto; line-height: 1.5;">Este panel calcula de forma automática el volumen de clientes segmentado. Es de uso estratégico para la toma de decisiones en el área de Marketing.</p>
+            </div>
+        </div>
     </div>
 
     <script>
         const rol = localStorage.getItem('rolUsuario');
 
         async function cargarReporte() {
-            // Protección extrema: El operario no puede bajo ningún concepto ver esta página
-            if (!rol || rol === 'operario') { 
-                window.location.href = 'dashboard.html'; 
-                return; 
+            // Protección Estricta de Rutas: El rol Operario no puede ver reportes, si lo intenta lo sacamos al Dashboard
+            if(!rol) { window.location.href = 'index.html'; return; }
+            if(rol === 'operario') {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            // Regla de vista del Administrador en Navbar
+            if (rol === 'admin') {
+                document.getElementById('menuUsuarios').style.display = 'inline-block';
             }
 
-            const res = await fetch('http://localhost:3000/api/reportes/dashboard');
-            const datos = await res.json();
-            const tbody = document.getElementById('tablaReporte');
-            tbody.innerHTML = '';
+            try {
+                const res = await fetch('http://localhost:3000/api/reportes/dashboard');
+                const data = await res.json();
+                const lista = document.getElementById('listaReporte');
+                lista.innerHTML = '';
 
-            datos.forEach(item => {
-                tbody.innerHTML += `<tr><td><strong>${item.categoria}</strong></td><td>${item.cantidad} clientes</td></tr>`;
-            });
+                if(data.length === 0) {
+                    lista.innerHTML = `<li style="text-align:center; color:#888;">No hay clientes registrados actualmente.</li>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    lista.innerHTML += `
+                        <li>
+                            <span>Nivel / Categoría: <span class="badge-cat">${item.categoria}</span></span>
+                            <strong>${item.cantidad} Clientes registrados</strong>
+                        </li>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error al procesar el reporte estructurado:", err);
+            }
         }
 
-        // Función solicitada por Marketing para descargar la base de clientes completa en un CSV nativo
-        async function exportarClientesCSV() {
-            const res = await fetch('http://localhost:3000/api/clientes');
-            const clientes = await res.json();
-            
-            let csvContent = "data:text/csv;charset=utf-8,ID,TipoDoc,Documento,Nombres,Apellidos,Correo,Telefono,Categoria,Puntos\n";
-            
-            clientes.forEach(c => {
-                csvContent += `${c.id},${c.tipo_documento},${c.numero_documento},${c.nombres},${c.apellidos},${c.correo_electronico || ''},${c.telefono || ''},${c.categoria_inicial},${c.puntos_acumulados}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Reporte_Clientes_AtlanticCity.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = 'index.html';
         }
 
-        function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
-        cargarReporte();
+        window.onload = cargarReporte;
     </script>
 </body>
 </html>

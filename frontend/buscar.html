@@ -2,16 +2,22 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Clientes - Atlantic City</title>
+    <title>Clientes - Atlantic City</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .search-box { margin-bottom: 25px; display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: var(--primary-color); color: white; }
-        .actions-btn { display: flex; gap: 8px; }
-        .btn-edit { background-color: #f0ad4e; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .btn-delete { background-color: #d9534f; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .edit-container { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin: 20px 0; display: none; }
+        th { background-color: #0d1c33; color: white; }
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85rem; margin-right: 5px; }
+        .btn-edit { background-color: #ffcc00; color: #333; }
+        .btn-delete { background-color: #ff4d4d; color: white; }
+        
+        /* Modal de Edición */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -22,182 +28,184 @@
             <a href="buscar.html" class="active">Clientes</a>
             <a href="campanas.html">Campañas</a>
             <a href="reportes.html" id="menuReportes">Reportes</a>
+            <a href="usuarios.html" id="menuUsuarios" style="display: none;">Usuarios</a>
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
         </div>
     </nav>
 
     <div class="main-content">
-        <a href="dashboard.html" style="text-decoration: none; color: var(--primary-color);">← Volver al Dashboard</a>
-        <h2>Perfil Unificado del Cliente</h2>
-        
-        <div class="card" style="display: flex; gap: 15px; margin-bottom: 20px;">
-            <input type="text" id="searchDoc" placeholder="Ingrese número de documento..." style="flex: 1; padding: 10px;">
-            <button class="btn-primary" onclick="buscarCliente()">Buscar</button>
+        <h2>Búsqueda y Gestión de Clientes</h2>
+        <p>Consulta la base de datos de socios del programa de fidelización.</p>
+        <br>
+
+        <div class="search-box">
+            <input type="text" id="txtBuscarDoc" placeholder="Ingrese el número de documento para buscar...">
+            <button class="btn-primary" onclick="buscarClientePorDocumento()">🔍 Buscar</button>
+            <button class="btn-primary" style="background-color: #666;" onclick="cargarTodosLosClientes()">Ver Todos</button>
         </div>
 
-        <!-- Formulario Oculto de Edición -->
-        <div id="contenedorEdicion" class="edit-container">
-            <h3>Editar Ficha del Cliente</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo Doc</th>
+                        <th>Documento</th>
+                        <th>Nombres y Apellidos</th>
+                        <th>Correo Electrónico</th>
+                        <th>Teléfono</th>
+                        <th>Categoría</th>
+                        <th>Puntos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyClientes">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #888;">Usa el buscador o haz clic en "Ver Todos" para cargar los datos.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDICIÓN DE CLIENTE -->
+    <div class="modal" id="modalEditar">
+        <div class="modal-content">
+            <h3>Editar Datos del Cliente</h3>
+            <br>
             <input type="hidden" id="editId">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div class="input-group">
-                    <label>Tipo Documento</label>
-                    <select id="editTipoDoc">
-                        <option>DNI</option>
-                        <option>Carnet de Extranjería</option>
-                        <option>Pasaporte</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Número Documento</label>
-                    <input type="text" id="editNumDoc">
-                </div>
-                <div class="input-group">
-                    <label>Nombres</label>
-                    <input type="text" id="editNombres">
-                </div>
-                <div class="input-group">
-                    <label>Apellidos</label>
-                    <input type="text" id="editApellidos">
-                </div>
-                <div class="input-group">
-                    <label>Correo Electrónico</label>
-                    <input type="email" id="editCorreo">
-                </div>
-                <div class="input-group">
-                    <label>Teléfono</label>
-                    <input type="text" id="editTelefono">
-                </div>
-                <div class="input-group">
-                    <label>Categoría</label>
-                    <select id="editCategoria">
-                        <option>Clásica</option>
-                        <option>Plata</option>
-                        <option>Oro</option>
-                        <option>Platino</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Puntos Acumulados</label>
-                    <input type="number" id="editPuntos">
-                </div>
+            <div class="input-group">
+                <label>Tipo Documento</label>
+                <input type="text" id="editTipoDoc">
+            </div>
+            <div class="input-group">
+                <label>Número Documento</label>
+                <input type="text" id="editNumDoc">
+            </div>
+            <div class="input-group">
+                <label>Nombres</label>
+                <input type="text" id="editNombres">
+            </div>
+            <div class="input-group">
+                <label>Apellidos</label>
+                <input type="text" id="editApellidos">
+            </div>
+            <div class="input-group">
+                <label>Correo Electrónico</label>
+                <input type="email" id="editCorreo">
+            </div>
+            <div class="input-group">
+                <label>Teléfono</label>
+                <input type="text" id="editTelefono">
+            </div>
+            <div class="input-group">
+                <label>Categoría</label>
+                <select id="editCategoria">
+                    <option value="Plata">Plata</option>
+                    <option value="Oro">Oro</option>
+                    <option value="Platino">Platino</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Puntos Acumulados</label>
+                <input type="number" id="editPuntos">
             </div>
             <br>
-            <button class="btn-primary" style="padding: 10px 20px;" onclick="guardarCambiosCliente()">Guardar Cambios</button>
-            <button class="btn-primary" style="background-color: #777; padding: 10px 20px;" onclick="ocultarEditor()">Cancelar</button>
+            <button class="btn-primary" onclick="guardarCambiosCliente()">Guardar Cambios</button>
+            <button class="btn-primary" style="background-color: #ff4d4d;" onclick="cerrarModal()">Cancelar</button>
         </div>
-
-        <h3>Listado General de Clientes</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Documento</th>
-                    <th>Nombres y Apellidos</th>
-                    <th>Correo</th>
-                    <th>Teléfono</th>
-                    <th>Categoría</th>
-                    <th>Puntos</th>
-                    <th id="thAcciones">Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaClientes"></tbody>
-        </table>
     </div>
 
     <script>
         const rol = localStorage.getItem('rolUsuario');
 
-        function verificarMenu() {
+        function verificarPermisos() {
             if(!rol) { window.location.href = 'index.html'; return; }
-            if (rol === 'operario') document.getElementById('menuReportes').style.display = 'none';
-            
-            // Si es Marketing, ocultamos por completo la columna estructural de acciones (editar/borrar)
-            if (rol === 'marketing') {
-                document.getElementById('thAcciones').style.display = 'none';
+            if (rol === 'operario') {
+                document.getElementById('menuReportes').style.display = 'none';
+            }
+            if (rol === 'admin') {
+                document.getElementById('menuUsuarios').style.display = 'inline-block';
             }
         }
 
-        async function obtenerClientes() {
-            verificarMenu();
-            const res = await fetch('http://localhost:3000/api/clientes');
-            const clientes = await res.json();
-            const tbody = document.getElementById('tablaClientes');
-            tbody.innerHTML = '';
+        async function cargarTodosLosClientes() {
+            try {
+                const res = await fetch('http://localhost:3000/api/clientes');
+                const clientes = await res.json();
+                renderizarTabla(clientes);
+            } catch (err) {
+                console.error(err);
+            }
+        }
 
-            clientes.forEach(c => {
-                let botonesAccion = '';
-                
-                // Definición de botones por Rol
-                if (rol === 'admin') {
-                    botonesAccion = `<button class="btn-edit" onclick='mostrarEditor(${JSON.stringify(c)})'>Editar</button>
-                                     <button class="btn-delete" onclick="eliminarCliente(${c.id})">Borrar</button>`;
-                } else if (rol === 'operario') {
-                    botonesAccion = `<button class="btn-edit" onclick='mostrarEditor(${JSON.stringify(c)})'>Editar</button>`;
+        async function buscarClientePorDocumento() {
+            const doc = document.getElementById('txtBuscarDoc').value.trim();
+            if(!doc) return alert("Por favor, digite un número de documento.");
+            try {
+                const res = await fetch(`http://localhost:3000/api/clientes/${doc}`);
+                if(res.status === 404) {
+                    document.getElementById('tbodyClientes').innerHTML = `<tr><td colspan="8" style="text-align: center; color: red;">Cliente no encontrado</td></tr>`;
+                    return;
                 }
+                const cliente = await res.json();
+                renderizarTabla([cliente]);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderizarTabla(lista) {
+            const tbody = document.getElementById('tbodyClientes');
+            tbody.innerHTML = '';
+            
+            if(lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">No hay registros disponibles.</td></tr>`;
+                return;
+            }
+
+            lista.forEach(c => {
+                // Restricción: Rol de marketing no puede editar ni eliminar (deshabilitamos o cambiamos botones)
+                const visibilidadAcciones = rol === 'marketing' ? 'style="display:none;"' : '';
 
                 tbody.innerHTML += `
                     <tr>
-                        <td><small>${c.tipo_documento}</small> <strong>${c.numero_documento}</strong></td>
+                        <td>${c.tipo_documento}</td>
+                        <td>${c.numero_documento}</td>
                         <td>${c.nombres} ${c.apellidos}</td>
-                        <td>${c.correo_electronico || '-'}</td>
+                        <td>${c.correo_electronico}</td>
                         <td>${c.telefono || '-'}</td>
-                        <td><span style="font-weight:bold;">${c.categoria_inicial}</span></td>
-                        <td><strong>${c.puntos_acumulados}</strong></td>
-                        ${rol !== 'marketing' ? `<td class="actions-btn">${botonesAccion}</td>` : ''}
+                        <td><strong>${c.categoria_inicial}</strong></td>
+                        <td>${c.puntos_acumulados}</td>
+                        <td>
+                            <button class="btn-action btn-edit" ${visibilidadAcciones} onclick='abrirModalEditar(${JSON.stringify(c)})'>Editar</button>
+                            <button class="btn-action btn-delete" ${visibilidadAcciones} onclick='eliminarCliente(${c.id})'>Eliminar</button>
+                            ${rol === 'marketing' ? '<span style="color:#888; font-size:0.85rem;">Solo lectura</span>' : ''}
+                        </td>
                     </tr>
                 `;
             });
         }
 
-        async function buscarCliente() {
-            const doc = document.getElementById('searchDoc').value;
-            if(!doc) { obtenerClientes(); return; }
-
-            const res = await fetch(`http://localhost:3000/api/clientes/${doc}`);
-            if(res.status === 404) return alert("Cliente no encontrado");
-
-            const c = await res.json();
-            const tbody = document.getElementById('tablaClientes');
-            
-            let botonesAccion = '';
-            if (rol === 'admin') {
-                botonesAccion = `<button class="btn-edit" onclick='mostrarEditor(${JSON.stringify(c)})'>Editar</button>
-                                 <button class="btn-delete" onclick="eliminarCliente(${c.id})">Borrar</button>`;
-            } else if (rol === 'operario') {
-                botonesAccion = `<button class="btn-edit" onclick='mostrarEditor(${JSON.stringify(c)})'>Editar</button>`;
-            }
-
-            tbody.innerHTML = `
-                <tr style="background-color: #fff9e6;">
-                    <td><small>${c.tipo_documento}</small> <strong>${c.numero_documento}</strong></td>
-                    <td>${c.nombres} ${c.apellidos}</td>
-                    <td>${c.correo_electronico || '-'}</td>
-                    <td>${c.telefono || '-'}</td>
-                    <td><span style="font-weight:bold;">${c.categoria_inicial}</span></td>
-                    <td><strong>${c.puntos_acumulados}</strong></td>
-                    ${rol !== 'marketing' ? `<td class="actions-btn">${botonesAccion}</td>` : ''}
-                </tr>
-            `;
+        function abrirModalEditar(c) {
+            document.getElementById('editId').value = c.id;
+            document.getElementById('editTipoDoc').value = c.tipo_documento;
+            document.getElementById('editNumDoc').value = c.numero_documento;
+            document.getElementById('editNombres').value = c.nombres;
+            document.getElementById('editApellidos').value = c.apellidos;
+            document.getElementById('editCorreo').value = c.correo_electronico;
+            document.getElementById('editTelefono').value = c.telefono;
+            document.getElementById('editCategoria').value = c.categoria_inicial;
+            document.getElementById('editPuntos').value = c.puntos_acumulados;
+            document.getElementById('modalEditar').style.display = 'flex';
         }
 
-        function mostrarEditor(cliente) {
-            document.getElementById('editId').value = cliente.id;
-            document.getElementById('editTipoDoc').value = cliente.tipo_documento;
-            document.getElementById('editNumDoc').value = cliente.numero_documento;
-            document.getElementById('editNombres').value = cliente.nombres;
-            document.getElementById('editApellidos').value = cliente.apellidos;
-            document.getElementById('editCorreo').value = cliente.correo_electronico || '';
-            document.getElementById('editTelefono').value = cliente.telefono || '';
-            document.getElementById('editCategoria').value = cliente.categoria_inicial;
-            document.getElementById('editPuntos').value = cliente.puntos_acumulados;
-            document.getElementById('contenedorEdicion').style.display = 'block';
+        function cerrarModal() {
+            document.getElementById('modalEditar').style.display = 'none';
         }
-
-        function ocultarEditor() { document.getElementById('contenedorEdicion').style.display = 'none'; }
 
         async function guardarCambiosCliente() {
             const id = document.getElementById('editId').value;
-            const datos = {
+            const payload = {
                 tipo_documento: document.getElementById('editTipoDoc').value,
                 numero_documento: document.getElementById('editNumDoc').value,
                 nombres: document.getElementById('editNombres').value,
@@ -205,25 +213,46 @@
                 correo_electronico: document.getElementById('editCorreo').value,
                 telefono: document.getElementById('editTelefono').value,
                 categoria_inicial: document.getElementById('editCategoria').value,
-                puntos_acumulados: parseInt(document.getElementById('editPuntos').value) || 0
+                puntos_acumulados: parseInt(document.getElementById('editPuntos').value)
             };
-            await fetch(`http://localhost:3000/api/clientes/actualizar/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-            ocultarEditor();
-            obtenerClientes();
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/clientes/actualizar/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert("Datos actualizados correctamente.");
+                    cerrarModal();
+                    cargarTodosLosClientes();
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         async function eliminarCliente(id) {
-            if (!confirm("¿Eliminar de forma permanente?")) return;
-            await fetch(`http://localhost:3000/api/clientes/${id}`, { method: 'DELETE' });
-            obtenerClientes();
+            if(!confirm("¿Está completamente seguro de eliminar a este cliente? Esta acción borrará su historial por completo.")) return;
+            try {
+                const res = await fetch(`http://localhost:3000/api/clientes/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if(data.success) {
+                    alert("Cliente removido correctamente del sistema.");
+                    cargarTodosLosClientes();
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
-        function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
-        obtenerClientes();
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = verificarPermisos;
     </script>
 </body>
 </html>
