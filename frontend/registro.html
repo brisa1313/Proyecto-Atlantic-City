@@ -33,31 +33,61 @@
         if(!rol || rol === 'marketing') { window.location.href = 'dashboard.html'; }
 
         async function verificarDuplicado() {
-            const doc = document.getElementById('numDoc').value;
+            const doc = document.getElementById('numDoc').value.trim();
             if(!doc) return alert("Ingrese un documento");
-            const res = await fetch(`http://localhost:3000/api/clientes/verificar/${doc}`);
-            const data = await res.json();
-            if (data.existe) { alert("❌ Este documento ya existe."); document.getElementById('btnRegistrar').disabled = true; } 
-            else { alert("✅ Documento válido."); document.getElementById('btnRegistrar').disabled = false; }
+            try {
+                const res = await fetch(`http://localhost:3000/api/clientes/verificar/${doc}`);
+                const data = await res.json();
+                if (data.existe) { 
+                    alert("❌ Este documento ya existe."); 
+                    document.getElementById('btnRegistrar').disabled = true; 
+                } else { 
+                    alert("✅ Documento válido."); 
+                    document.getElementById('btnRegistrar').disabled = false; 
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error al verificar duplicado.");
+            }
         }
 
         async function registrarCliente() {
             const cliente = {
                 tipo_documento: document.getElementById('tipoDoc').value,
-                numero_documento: document.getElementById('numDoc').value,
-                nombres: document.getElementById('nombres').value,
-                apellidos: document.getElementById('apellidos').value,
-                correo_electronico: document.getElementById('correo').value,
-                telefono: document.getElementById('telefono').value,
+                numero_documento: document.getElementById('numDoc').value.trim(),
+                nombres: document.getElementById('nombres').value.trim(),
+                apellidos: document.getElementById('apellidos').value.trim(),
+                correo_electronico: document.getElementById('correo').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
                 categoria_inicial: document.getElementById('categoria').value
             };
-            const response = await fetch('http://localhost:3000/api/clientes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cliente)
-            });
-            if((await response.json()).success) { alert("¡Cliente guardado!"); window.location.href = 'dashboard.html'; }
+
+            if(!cliente.numero_documento || !cliente.nombres || !cliente.apellidos) {
+                return alert("Por favor, rellene los campos obligatorios (Documento, Nombres y Apellidos).");
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cliente)
+                });
+                
+                // Corrección aquí: Guardamos la conversión JSON en una constante primero
+                const data = await response.json();
+                
+                if(data.success) { 
+                    alert("¡Cliente guardado exitosamente!"); 
+                    window.location.href = 'dashboard.html'; 
+                } else {
+                    alert("❌ No se pudo registrar el cliente: " + (data.message || "Error desconocido"));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error en la conexión con el servidor.");
+            }
         }
+        
         function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
     </script>
 </body>

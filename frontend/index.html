@@ -40,22 +40,32 @@
 
             lblError.style.display = 'none';
 
-            const response = await fetch('http://localhost:3000/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario, contrasena })
-            });
+            try {
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contrasena })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (data.success) {
-                // Guardamos el usuario y su respectivo rol de forma local
-                localStorage.setItem('usuarioLogueado', data.user.usuario);
-                localStorage.setItem('rolUsuario', data.user.role || data.user.rol); 
-                
-                window.location.href = 'dashboard.html';
-            } else {
-                lblError.style.display = 'block';
+                if (data.success) {
+                    // === NUEVOS CAMPOS AÑADIDOS SIN MODIFICAR LO ANTERIOR ===
+                    localStorage.setItem('nombreUsuario', data.user.usuario);
+                    localStorage.setItem('usuarioLogueado', data.user.usuario);
+                    localStorage.setItem('rolUsuario', data.user.rol || data.user.role); 
+                    
+                    // Guardamos los nombres reales devueltos por el backend actualizado
+                    localStorage.setItem('nombresUsuario', data.user.nombres || '');
+                    localStorage.setItem('apellidosUsuario', data.user.apellidos || '');
+                    
+                    window.location.href = 'dashboard.html';
+                } else {
+                    lblError.style.display = 'block';
+                }
+            } catch (err) {
+                console.error("Error en la conexión del login:", err);
+                alert("No se pudo conectar con el servidor.");
             }
         }
     </script>

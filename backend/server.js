@@ -6,7 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Ruta de Autenticación (Login)
+// ==========================================
+// 1. AUTENTICACIÓN (LOGIN)
+// ==========================================
 app.post('/api/login', async (req, res) => {
     const { usuario, contrasena } = req.body;
     try {
@@ -14,7 +16,7 @@ app.post('/api/login', async (req, res) => {
         const result = await pool.request()
             .input('user', sql.VarChar, usuario)
             .input('pass', sql.VarChar, contrasena)
-            .query('SELECT usuario, rol FROM Usuarios WHERE usuario = @user AND contrasena = @pass');
+            .query('SELECT usuario, rol, nombres, apellidos FROM Usuarios WHERE usuario = @user AND contrasena = @pass');
 
         if (result.recordset.length > 0) {
             res.json({ success: true, user: result.recordset[0] });
@@ -26,9 +28,11 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// ===== RUTAS ACTUALIZADAS: GESTIÓN DE USUARIOS COLABORADORES =====
+// ==========================================
+// 2. GESTIÓN DE USUARIOS COLABORADORES (CRUD)
+// ==========================================
 
-// Obtener todos los usuarios del sistema (Con nombres, apellidos y DNI)
+// Obtener todos los colaboradores
 app.get('/api/usuarios', async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -39,13 +43,12 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
-// Registrar un nuevo usuario colaborador
+// Registrar colaborador
 app.post('/api/usuarios', async (req, res) => {
     const { usuario, contrasena, rol, nombres, apellidos, dni } = req.body;
     try {
         const pool = await poolPromise;
         
-        // Verificar si el usuario ya existe
         const existe = await pool.request()
             .input('user', sql.VarChar, usuario)
             .query('SELECT COUNT(*) AS count FROM Usuarios WHERE usuario = @user');
@@ -70,7 +73,7 @@ app.post('/api/usuarios', async (req, res) => {
     }
 });
 
-// NUEVO: Actualizar un usuario colaborador por su ID
+// Actualizar colaborador
 app.put('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     const { usuario, contrasena, rol, nombres, apellidos, dni } = req.body;
@@ -98,7 +101,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// NUEVO: Eliminar un usuario colaborador por su ID
+// Eliminar colaborador
 app.delete('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -112,7 +115,31 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// ===== SECCIÓN CLIENTES, CAMPAÑAS Y REPORTES =====
+// ==========================================
+// 3. INDICADORES DEL DASHBOARD
+// ==========================================
+app.get('/api/dashboard/contadores', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const totalClientes = await pool.query("SELECT COUNT(*) AS total FROM Clientes");
+        const nuevosHoy = await pool.query("SELECT COUNT(*) AS total FROM Clientes WHERE CAST(fecha_registro AS DATE) = CAST(GETDATE() AS DATE)");
+        const campanasActivas = await pool.query("SELECT COUNT(*) AS total FROM Campanas");
+        const totalUsuarios = await pool.query("SELECT COUNT(*) AS total FROM Usuarios"); 
+
+        res.json({
+            totalClientes: totalClientes.recordset[0].total,
+            nuevosHoy: nuevosHoy.recordset[0].total,
+            campanasActivas: campanasActivas.recordset[0].total,
+            totalUsuarios: totalUsuarios.recordset[0].total 
+        });
+    } catch (err) { res.status(500).send(err.message); }
+});
+
+// ==========================================
+// 4. MÓDULO DE CLIENTES
+// ==========================================
+
+// Verificar si el documento del cliente ya existe
 app.get('/api/clientes/verificar/:doc', async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -123,6 +150,7 @@ app.get('/api/clientes/verificar/:doc', async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
+// AÑADIR NUEVO CLIENTE (Consulta simplificada y protegida contra fallos de tipo Date)
 app.post('/api/clientes', async (req, res) => {
     const { tipo_documento, numero_documento, nombres, apellidos, correo_electronico, telefono, categoria_inicial } = req.body;
     try {
@@ -135,12 +163,17 @@ app.post('/api/clientes', async (req, res) => {
             .input('email', sql.VarChar, correo_electronico)
             .input('tel', sql.VarChar, telefono)
             .input('cat', sql.VarChar, categoria_inicial)
-            .query(`INSERT INTO Clientes (tipo_documento, numero_documento, nombres, apellidos, correo_electronico, telefono, categoria_inicial, puntos_acumulados) 
-                    VALUES (@tipo, @doc, @nom, @ape, @email, @tel, @cat, 0)`);
+            .query(`INSERT INTO Clientes (tipo_documento, numero_documento, nombres, apellidos, correo_electronico, telefono, categoria_inicial, puntos_acumulados, fecha_registro) 
+                    VALUES (@tipo, @doc, @nom, @ape, @email, @tel, @cat, 0, GETDATE())`);
+        
         res.json({ success: true, message: 'Cliente registrado correctamente.' });
-    } catch (err) { res.status(500).send(err.message); }
+    } catch (err) { 
+        console.error("Error detallado al insertar cliente:", err.message);
+        res.status(500).send(err.message); 
+    }
 });
 
+// Buscar cliente por documento
 app.get('/api/clientes/:doc', async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -152,6 +185,7 @@ app.get('/api/clientes/:doc', async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
+// Obtener todos los clientes
 app.get('/api/clientes', async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -160,6 +194,7 @@ app.get('/api/clientes', async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
+// Actualizar datos de cliente existente
 app.put('/api/clientes/actualizar/:id', async (req, res) => {
     const { id } = req.params;
     const { tipo_documento, numero_documento, nombres, apellidos, correo_electronico, telefono, categoria_inicial, puntos_acumulados } = req.body;
@@ -180,6 +215,7 @@ app.put('/api/clientes/actualizar/:id', async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
+// Eliminar cliente
 app.delete('/api/clientes/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -189,22 +225,9 @@ app.delete('/api/clientes/:id', async (req, res) => {
     } catch (err) { res.status(500).send(err.message); }
 });
 
-app.get('/api/dashboard/contadores', async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const totalClientes = await pool.query("SELECT COUNT(*) AS total FROM Clientes");
-        const nuevosHoy = await pool.query("SELECT COUNT(*) AS total FROM Clientes WHERE CAST(fecha_registro AS DATE) = CAST(GETDATE() AS DATE)");
-        const campanasActivas = await pool.query("SELECT COUNT(*) AS total FROM Campanas");
-        const nivelOroMas = await pool.query("SELECT COUNT(*) AS total FROM Clientes WHERE categoria_inicial IN ('Oro', 'Platino')");
-        res.json({
-            totalClientes: totalClientes.recordset[0].total,
-            nuevosHoy: nuevosHoy.recordset[0].total,
-            campanasActivas: campanasActivas.recordset[0].total,
-            nivelOroMas: nivelOroMas.recordset[0].total
-        });
-    } catch (err) { res.status(500).send(err.message); }
-});
-
+// ==========================================
+// 5. MÓDULO DE CAMPAÑAS Y REPORTES
+// ==========================================
 app.get('/api/campanas', async (req, res) => {
     try {
         const pool = await poolPromise;
