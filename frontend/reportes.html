@@ -11,6 +11,23 @@
         .data-list li { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 1.05rem; }
         .data-list li:last-child { border-bottom: none; }
         .badge-cat { font-weight: bold; color: #1a73e8; text-transform: uppercase; }
+
+        /* Estilos agregados para el botón de exportación */
+        .header-actions { display: flex; justify-content: space-between; align-items: center; }
+        .btn-export {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-export:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -27,8 +44,14 @@
     </nav>
 
     <div class="main-content">
-        <h2>Reportes Estadísticos</h2>
-        <p>Distribución demográfica de los niveles de clientes acumulados en tiempo real.</p>
+        <div class="header-actions">
+            <div>
+                <h2>Reportes Estadísticos</h2>
+                <p>Distribución demográfica de los niveles de clientes acumulados en tiempo real.</p>
+            </div>
+            <!-- Botón para exportar datos -->
+            <button class="btn-export" onclick="exportarCSV()">📥 Exportar a CSV</button>
+        </div>
 
         <div class="report-grid">
             <div class="chart-box">
@@ -50,6 +73,7 @@
 
     <script>
         const rol = localStorage.getItem('rolUsuario');
+        let datosReporteGlobal = []; // Variable global para almacenar los datos recibidos
 
         async function cargarReporte() {
             // Protección Estricta de Rutas: El rol Operario no puede ver reportes, si lo intenta lo sacamos al Dashboard
@@ -67,6 +91,8 @@
             try {
                 const res = await fetch('http://localhost:3000/api/reportes/dashboard');
                 const data = await res.json();
+                datosReporteGlobal = data; // Guardamos los datos para la exportación CSV
+
                 const lista = document.getElementById('listaReporte');
                 lista.innerHTML = '';
 
@@ -86,6 +112,37 @@
             } catch (err) {
                 console.error("Error al procesar el reporte estructurado:", err);
             }
+        }
+
+        // Función para exportar los datos mostrados a un archivo CSV
+        function exportarCSV() {
+            if (!datosReporteGlobal || datosReporteGlobal.length === 0) {
+                alert("No hay datos disponibles para exportar.");
+                return;
+            }
+
+            let csvContent = ["Categoría,Clientes Registrados"];
+
+            datosReporteGlobal.forEach(item => {
+                const cat = item.categoria ? item.categoria.toUpperCase() : 'SIN CATEGORIA';
+                const cant = item.cantidad || 0;
+                csvContent.push(`"${cat}","${cant}"`);
+            });
+
+            // Prefijo \uFEFF para incluir el BOM UTF-8 y garantizar que las tildes/eñes abran bien en Excel
+            const blobContent = '\uFEFF' + csvContent.join('\n');
+            const blob = new Blob([blobContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'Reporte_Categorias_Atlantic_City.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(enlace);
         }
 
         function cerrarSesion() {

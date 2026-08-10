@@ -1,222 +1,443 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
     <title>Categorías - Atlantic City</title>
+
     <link rel="stylesheet" href="styles.css">
+
     <style>
+
         .grid-campanas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 25px; }
+
         .campana-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+
         .campana-card h3 { color: #0d1c33; margin-bottom: 5px; text-transform: uppercase; }
+
         .campana-card .vigencia { font-size: 0.9rem; color: #1a73e8; font-weight: bold; margin-bottom: 15px; }
+
         .campana-card p { font-size: 0.95rem; color: #555; line-height: 1.4; margin-bottom: 20px; }
+
         .actions-panel { display: flex; gap: 10px; }
-        
+
+       
+
         /* Formulario integrado para Crear Nueva Categoría */
+
         .create-panel { background: #fdfdfd; border: 1px dashed #b5c4d6; padding: 20px; border-radius: 8px; margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+
         .input-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+
         .input-group label { font-size: 0.85rem; font-weight: bold; color: #333; }
+
         .input-group input, .input-group textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
+
         .btn-primary { padding: 8px 16px; background-color: #0d1c33; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; height: 36px; }
 
+
+
         /* Modal de Modificación */
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+
         .modal-content { background: white; padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
     </style>
+
 </head>
+
 <body>
+
     <nav class="navbar">
+
         <h2>ATLANTIC CITY</h2>
+
         <div class="nav-links">
+
             <a href="dashboard.html">Dashboard</a>
+
             <a href="buscar.html">Clientes</a>
+
             <a href="campanas.html" class="active">Categorías</a>
+
             <a href="reportes.html" id="menuReportes">Reportes</a>
+
             <a href="usuarios.html" id="menuUsuarios" style="display: none;">Usuarios</a>
+
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
+
         </div>
+
     </nav>
 
+
+
     <div class="main-content">
+
         <h2>Categorías de Fidelización Activas</h2>
+
         <p>Vigila y configura los rangos de puntajes orientados a la clasificación de clientes corporativos.</p>
 
+
+
         <!-- FORMULARIO PARA CREAR NUEVA CATEGORÍA -->
+
         <div class="create-panel" id="panelCrearCategoria">
+
             <div class="input-group">
+
                 <label>Nombre del Nivel</label>
+
                 <input type="text" id="nuevaCatNombre" placeholder="Ej. Diamante">
+
             </div>
+
             <div class="input-group">
+
                 <label>Puntos Mínimos</label>
+
                 <input type="number" id="nuevaCatMin" placeholder="0">
+
             </div>
+
             <div class="input-group">
+
                 <label>Puntos Máximos</label>
+
                 <input type="number" id="nuevaCatMax" placeholder="15000">
+
             </div>
+
             <button class="btn-primary" onclick="crearNuevaCategoria()">+ Agregar Categoría</button>
+
         </div>
+
+
 
         <div class="grid-campanas" id="contenedorCampanas">
+
             <!-- Cargando de forma dinámica desde el servidor -->
+
         </div>
+
     </div>
+
+
 
     <!-- MODAL EDITAR CATEGORÍA -->
+
     <div class="modal" id="modalCampana">
+
         <div class="modal-content">
+
             <h3>Modificar Ficha de Categoría</h3>
+
             <br>
+
             <input type="hidden" id="campanaId">
+
             <div class="input-group" style="margin-bottom: 12px;">
+
                 <label>Nombre de la Categoría</label>
+
                 <input type="text" id="campanaNombre">
+
             </div>
+
             <div class="input-group" style="margin-bottom: 12px;">
+
                 <label>Rango / Regla de Puntos</label>
+
                 <input type="text" id="campanaVigencia">
+
             </div>
+
             <div class="input-group" style="margin-bottom: 12px;">
+
                 <label>Descripción / Beneficios</label>
+
                 <textarea id="campanaDesc" rows="4"></textarea>
+
             </div>
+
             <br>
+
             <button class="btn-primary" onclick="guardarCambiosCampana()">Guardar Cambios</button>
+
             <button class="btn-primary" style="background-color: #ff4d4d;" onclick="cerrarModal()">Cancelar</button>
+
         </div>
+
     </div>
 
+
+
     <script>
+
         const rol = localStorage.getItem('rolUsuario');
 
+
+
         async function cargarCampanas() {
+
             if(!rol) { window.location.href = 'index.html'; return; }
-            
+
+           
+
             if (rol === 'operario') {
+
                 document.getElementById('menuReportes').style.display = 'none';
+
                 document.getElementById('panelCrearCategoria').style.display = 'none';
+
             }
+
             if (rol === 'admin') {
+
                 document.getElementById('menuUsuarios').style.display = 'inline-block';
+
             }
+
+
 
             try {
+
                 const res = await fetch('http://localhost:3000/api/campanas');
+
                 const categorias = await res.json();
+
                 const contenedor = document.getElementById('contenedorCampanas');
+
                 contenedor.innerHTML = '';
 
+
+
                 categorias.forEach(camp => {
+
                     const ocultarBotones = rol === 'operario' ? 'style="display:none;"' : '';
 
+
+
                     contenedor.innerHTML += `
+
                         <div class="campana-card">
+
                             <div>
+
                                 <h3>${camp.nombre}</h3>
+
                                 <div class="vigencia">📊 Rango: ${camp.vigencia}</div>
+
                                 <p>${camp.descripcion}</p>
+
                             </div>
+
                             <div class="actions-panel" ${ocultarBotones}>
+
                                 <button class="btn-primary" style="padding:6px 12px; background-color:#ffcc00; color:#333;" onclick='abrirModalCampana(${JSON.stringify(camp)})'>Editar</button>
+
                                 <button class="btn-primary" style="padding:6px 12px; background-color:#ff4d4d;" onclick='eliminarCampana(${camp.id})'>Eliminar</button>
+
                             </div>
+
                             ${rol === 'operario' ? '<span style="color:#777; font-size:0.85rem; font-style:italic;">Vista de solo lectura</span>' : ''}
+
                         </div>
+
                     `;
+
                 });
+
             } catch (err) {
+
                 console.error("Error al cargar las categorías desde el servidor:", err);
+
             }
+
         }
 
+
+
         async function crearNuevaCategoria() {
+
             const nombre = document.getElementById('nuevaCatNombre').value.trim();
+
             const min = document.getElementById('nuevaCatMin').value;
+
             const max = document.getElementById('nuevaCatMax').value;
+
+
 
             if(!nombre || min === "") return alert("Ingrese al menos el nombre y el puntaje mínimo.");
 
+
+
             const rangoTexto = max ? `${min} a ${max} puntos` : `Más de ${min} puntos`;
+
             const payload = {
+
                 nombre: nombre,
+
                 vigencia: rangoTexto,
+
                 descripcion: "Categoría de fidelización personalizada del sistema."
+
             };
 
+
+
             try {
+
                 const res = await fetch('http://localhost:3000/api/campanas', {
+
                     method: 'POST',
+
                     headers: {'Content-Type': 'application/json'},
+
                     body: JSON.stringify(payload)
+
                 });
+
                 if(res.ok) {
+
                     alert("Nueva categoría añadida exitosamente.");
+
                     document.getElementById('nuevaCatNombre').value = '';
+
                     document.getElementById('nuevaCatMin').value = '';
+
                     document.getElementById('nuevaCatMax').value = '';
+
                     cargarCampanas();
+
                 }
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         function abrirModalCampana(camp) {
+
             document.getElementById('campanaId').value = camp.id;
+
             document.getElementById('campanaNombre').value = camp.nombre;
+
             document.getElementById('campanaVigencia').value = camp.vigencia;
+
             document.getElementById('campanaDesc').value = camp.descripcion;
+
             document.getElementById('modalCampana').style.display = 'flex';
+
         }
+
+
 
         function cerrarModal() {
+
             document.getElementById('modalCampana').style.display = 'none';
+
         }
+
+
 
         async function guardarCambiosCampana() {
+
             const id = document.getElementById('campanaId').value;
+
             const payload = {
+
                 nombre: document.getElementById('campanaNombre').value,
+
                 vigencia: document.getElementById('campanaVigencia').value,
+
                 descripcion: document.getElementById('campanaDesc').value
+
             };
 
+
+
             try {
+
                 const res = await fetch(`http://localhost:3000/api/campanas/${id}`, {
+
                     method: 'PUT',
+
                     headers: {'Content-Type': 'application/json'},
+
                     body: JSON.stringify(payload)
+
                 });
+
                 if(res.ok) {
+
                     alert("Categoría actualizada con éxito.");
+
                     cerrarModal();
+
                     cargarCampanas();
+
                 }
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         async function eliminarCampana(id) {
+
             if(!confirm("¿Deseas dar de baja esta categoría de la lista activa?")) return;
+
             try {
+
                 const res = await fetch(`http://localhost:3000/api/campanas/${id}`, { method: 'DELETE' });
+
                 if(res.ok) {
+
                     alert("Categoría eliminada.");
+
                     cargarCampanas();
+
                 }
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         function cerrarSesion() {
+
             localStorage.clear();
+
             window.location.href = 'index.html';
+
         }
 
+
+
         window.onload = cargarCampanas;
+
     </script>
+
 </body>
+
 </html>

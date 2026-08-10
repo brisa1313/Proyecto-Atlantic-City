@@ -1,258 +1,516 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
     <title>Clientes - Atlantic City</title>
+
     <link rel="stylesheet" href="styles.css">
+
     <style>
+
         .search-box { margin-bottom: 25px; display: flex; gap: 10px; }
+
         .search-box input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+
         .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+
         th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+
         th { background-color: #0d1c33; color: white; }
+
         .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85rem; margin-right: 5px; }
+
         .btn-edit { background-color: #ffcc00; color: #333; }
+
         .btn-delete { background-color: #ff4d4d; color: white; }
-        
+
+       
+
         /* Modal de Edición */
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+
         .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
     </style>
+
 </head>
+
 <body>
+
     <nav class="navbar">
+
         <h2>ATLANTIC CITY</h2>
+
         <div class="nav-links">
+
             <a href="dashboard.html">Dashboard</a>
+
             <a href="buscar.html" class="active">Clientes</a>
+
             <a href="campanas.html">Campañas</a>
+
             <a href="reportes.html" id="menuReportes">Reportes</a>
+
             <a href="usuarios.html" id="menuUsuarios" style="display: none;">Usuarios</a>
+
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
+
         </div>
+
     </nav>
 
+
+
     <div class="main-content">
+
         <h2>Búsqueda y Gestión de Clientes</h2>
+
         <p>Consulta la base de datos de socios del programa de fidelización.</p>
+
         <br>
 
+
+
         <div class="search-box">
+
             <input type="text" id="txtBuscarDoc" placeholder="Ingrese el número de documento para buscar...">
+
             <button class="btn-primary" onclick="buscarClientePorDocumento()">🔍 Buscar</button>
+
             <button class="btn-primary" style="background-color: #666;" onclick="cargarTodosLosClientes()">Ver Todos</button>
+
         </div>
+
+
 
         <div class="table-container">
+
             <table>
+
                 <thead>
+
                     <tr>
+
                         <th>Tipo Doc</th>
+
                         <th>Documento</th>
+
                         <th>Nombres y Apellidos</th>
+
                         <th>Correo Electrónico</th>
+
                         <th>Teléfono</th>
+
                         <th>Categoría</th>
+
                         <th>Puntos</th>
+
                         <th>Acciones</th>
+
                     </tr>
+
                 </thead>
+
                 <tbody id="tbodyClientes">
+
                     <tr>
+
                         <td colspan="8" style="text-align: center; color: #888;">Usa el buscador o haz clic en "Ver Todos" para cargar los datos.</td>
+
                     </tr>
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
+
+
 
     <!-- MODAL DE EDICIÓN DE CLIENTE -->
+
     <div class="modal" id="modalEditar">
+
         <div class="modal-content">
+
             <h3>Editar Datos del Cliente</h3>
+
             <br>
+
             <input type="hidden" id="editId">
+
             <div class="input-group">
+
                 <label>Tipo Documento</label>
+
                 <input type="text" id="editTipoDoc">
+
             </div>
+
             <div class="input-group">
+
                 <label>Número Documento</label>
+
                 <input type="text" id="editNumDoc">
+
             </div>
+
             <div class="input-group">
+
                 <label>Nombres</label>
+
                 <input type="text" id="editNombres">
+
             </div>
+
             <div class="input-group">
+
                 <label>Apellidos</label>
+
                 <input type="text" id="editApellidos">
+
             </div>
+
             <div class="input-group">
+
                 <label>Correo Electrónico</label>
+
                 <input type="email" id="editCorreo">
+
             </div>
+
             <div class="input-group">
+
                 <label>Teléfono</label>
+
                 <input type="text" id="editTelefono">
+
             </div>
+
             <div class="input-group">
+
                 <label>Categoría</label>
+
                 <select id="editCategoria">
+
                     <option value="Plata">Plata</option>
+
                     <option value="Oro">Oro</option>
+
                     <option value="Platino">Platino</option>
+
                 </select>
+
             </div>
+
             <div class="input-group">
+
                 <label>Puntos Acumulados</label>
+
                 <input type="number" id="editPuntos">
+
             </div>
+
             <br>
+
             <button class="btn-primary" onclick="guardarCambiosCliente()">Guardar Cambios</button>
+
             <button class="btn-primary" style="background-color: #ff4d4d;" onclick="cerrarModal()">Cancelar</button>
+
         </div>
+
     </div>
 
+
+
     <script>
+
         const rol = localStorage.getItem('rolUsuario');
 
+
+
         function verificarPermisos() {
+
             if(!rol) { window.location.href = 'index.html'; return; }
+
             if (rol === 'operario') {
+
                 document.getElementById('menuReportes').style.display = 'none';
+
             }
+
             if (rol === 'admin') {
+
                 document.getElementById('menuUsuarios').style.display = 'inline-block';
+
             }
+
         }
+
+
 
         async function cargarTodosLosClientes() {
+
             try {
+
                 const res = await fetch('http://localhost:3000/api/clientes');
+
                 const clientes = await res.json();
+
                 renderizarTabla(clientes);
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         async function buscarClientePorDocumento() {
+
             const doc = document.getElementById('txtBuscarDoc').value.trim();
+
             if(!doc) return alert("Por favor, digite un número de documento.");
+
             try {
+
                 const res = await fetch(`http://localhost:3000/api/clientes/${doc}`);
+
                 if(res.status === 404) {
+
                     document.getElementById('tbodyClientes').innerHTML = `<tr><td colspan="8" style="text-align: center; color: red;">Cliente no encontrado</td></tr>`;
+
                     return;
+
                 }
+
                 const cliente = await res.json();
+
                 renderizarTabla([cliente]);
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         function renderizarTabla(lista) {
+
             const tbody = document.getElementById('tbodyClientes');
+
             tbody.innerHTML = '';
-            
+
+           
+
             if(lista.length === 0) {
+
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">No hay registros disponibles.</td></tr>`;
+
                 return;
+
             }
+
+
 
             lista.forEach(c => {
+
                 // Restricción: Rol de marketing no puede editar ni eliminar (deshabilitamos o cambiamos botones)
+
                 const visibilidadAcciones = rol === 'marketing' ? 'style="display:none;"' : '';
 
+
+
                 tbody.innerHTML += `
+
                     <tr>
+
                         <td>${c.tipo_documento}</td>
+
                         <td>${c.numero_documento}</td>
+
                         <td>${c.nombres} ${c.apellidos}</td>
+
                         <td>${c.correo_electronico}</td>
+
                         <td>${c.telefono || '-'}</td>
+
                         <td><strong>${c.categoria_inicial}</strong></td>
+
                         <td>${c.puntos_acumulados}</td>
+
                         <td>
+
                             <button class="btn-action btn-edit" ${visibilidadAcciones} onclick='abrirModalEditar(${JSON.stringify(c)})'>Editar</button>
+
                             <button class="btn-action btn-delete" ${visibilidadAcciones} onclick='eliminarCliente(${c.id})'>Eliminar</button>
+
                             ${rol === 'marketing' ? '<span style="color:#888; font-size:0.85rem;">Solo lectura</span>' : ''}
+
                         </td>
+
                     </tr>
+
                 `;
+
             });
+
         }
+
+
 
         function abrirModalEditar(c) {
+
             document.getElementById('editId').value = c.id;
+
             document.getElementById('editTipoDoc').value = c.tipo_documento;
+
             document.getElementById('editNumDoc').value = c.numero_documento;
+
             document.getElementById('editNombres').value = c.nombres;
+
             document.getElementById('editApellidos').value = c.apellidos;
+
             document.getElementById('editCorreo').value = c.correo_electronico;
+
             document.getElementById('editTelefono').value = c.telefono;
+
             document.getElementById('editCategoria').value = c.categoria_inicial;
+
             document.getElementById('editPuntos').value = c.puntos_acumulados;
+
             document.getElementById('modalEditar').style.display = 'flex';
+
         }
+
+
 
         function cerrarModal() {
+
             document.getElementById('modalEditar').style.display = 'none';
+
         }
+
+
 
         async function guardarCambiosCliente() {
+
             const id = document.getElementById('editId').value;
+
             const payload = {
+
                 tipo_documento: document.getElementById('editTipoDoc').value,
+
                 numero_documento: document.getElementById('editNumDoc').value,
+
                 nombres: document.getElementById('editNombres').value,
+
                 apellidos: document.getElementById('editApellidos').value,
+
                 correo_electronico: document.getElementById('editCorreo').value,
+
                 telefono: document.getElementById('editTelefono').value,
+
                 categoria_inicial: document.getElementById('editCategoria').value,
+
                 puntos_acumulados: parseInt(document.getElementById('editPuntos').value)
+
             };
 
+
+
             try {
+
                 const res = await fetch(`http://localhost:3000/api/clientes/actualizar/${id}`, {
+
                     method: 'PUT',
+
                     headers: {'Content-Type': 'application/json'},
+
                     body: JSON.stringify(payload)
+
                 });
+
                 const data = await res.json();
+
                 if(data.success) {
+
                     alert("Datos actualizados correctamente.");
+
                     cerrarModal();
+
                     cargarTodosLosClientes();
+
                 }
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         async function eliminarCliente(id) {
+
             if(!confirm("¿Está completamente seguro de eliminar a este cliente? Esta acción borrará su historial por completo.")) return;
+
             try {
+
                 const res = await fetch(`http://localhost:3000/api/clientes/${id}`, { method: 'DELETE' });
+
                 const data = await res.json();
+
                 if(data.success) {
+
                     alert("Cliente removido correctamente del sistema.");
+
                     cargarTodosLosClientes();
+
                 }
+
             } catch (err) {
+
                 console.error(err);
+
             }
+
         }
+
+
 
         function cerrarSesion() {
+
             localStorage.clear();
+
             window.location.href = 'index.html';
+
         }
 
+
+
         window.onload = verificarPermisos;
+
     </script>
+
 </body>
+
 </html>
+

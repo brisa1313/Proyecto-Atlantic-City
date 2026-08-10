@@ -1,10 +1,17 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
+
     <title>Control de Usuarios - Atlantic City</title>
+
     <link rel="stylesheet" href="styles.css">
+
     <style>
+
         .container-split { display: flex; gap: 25px; margin-top: 20px; }
         .panel-form { flex: 1; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .panel-table { flex: 2; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; }
@@ -18,16 +25,24 @@
         .btn-action { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.8rem; margin-right: 3px; }
         .btn-edit { background-color: #ffcc00; color: #333; }
         .btn-delete { background-color: #ff4d4d; color: white; }
-        
+
         /* Modal de Edición */
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 420px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
     </style>
+
 </head>
+
 <body>
+
     <nav class="navbar">
+
         <h2>ATLANTIC CITY</h2>
+
         <div class="nav-links">
+
             <a href="dashboard.html">Dashboard</a>
             <a href="buscar.html">Clientes</a>
             <a href="campanas.html">Campañas</a>
@@ -35,43 +50,66 @@
             <a href="usuarios.html" class="active" id="menuUsuarios">Usuarios</a>
             <a href="#" onclick="cerrarSesion()" style="color: #ff4d4d; margin-left: 30px; font-weight: bold;">Cerrar Sesión</a>
         </div>
+
     </nav>
 
     <div class="main-content">
+
         <h2>Panel de Control de Colaboradores</h2>
+
         <p>Alta de nuevos accesos, personalización y monitoreo de roles corporativos.</p>
 
         <div class="container-split">
+
             <!-- Formulario para Registrar Nuevo Usuario -->
+
             <div class="panel-form">
+
                 <h3>+ Crear Colaborador</h3>
                 <br>
                 <div class="input-group">
+
                     <label>Nombres</label>
                     <input type="text" id="txtNewNombres" placeholder="Nombres del trabajador">
+
                 </div>
+
                 <div class="input-group">
+
                     <label>Apellidos</label>
                     <input type="text" id="txtNewApellidos" placeholder="Apellidos del trabajador">
+
                 </div>
+
                 <div class="input-group">
+
                     <label>DNI</label>
                     <input type="text" id="txtNewDni" maxlength="8" placeholder="Número de DNI">
+
                 </div>
+
                 <div class="input-group">
+
                     <label>Nombre de Usuario (Login)</label>
                     <input type="text" id="txtNewUser" placeholder="ejemplo.atlantic">
+
                 </div>
+
                 <div class="input-group">
+
                     <label>Contraseña de Acceso</label>
                     <input type="password" id="txtNewPass" placeholder="Asignar contraseña">
+
                 </div>
+
                 <div class="input-group">
                     <label>Rol Asignado</label>
                     <select id="selNewRol">
+
                         <option value="operario">Operario (Atención)</option>
                         <option value="marketing">Marketing (Campañas)</option>
                         <option value="admin">Administrador (Total)</option>
+
                     </select>
                 </div>
                 <br>
@@ -79,16 +117,19 @@
             </div>
 
             <!-- Tabla de visualización de Usuarios existentes -->
+
             <div class="panel-table">
                 <h3>Colaboradores Registrados</h3>
                 <table>
                     <thead>
                         <tr>
+
                             <th>DNI</th>
                             <th>Colaborador</th>
                             <th>Usuario</th>
                             <th>Rol</th>
                             <th>Acciones</th>
+
                         </tr>
                     </thead>
                     <tbody id="tbodyUsuarios"></tbody>
@@ -98,37 +139,59 @@
     </div>
 
     <!-- MODAL DE EDICIÓN DE USUARIO -->
+
     <div class="modal" id="modalEditarUsuario">
+
         <div class="modal-content">
+
             <h3>Modificar Datos del Colaborador</h3>
             <br>
             <input type="hidden" id="editUserId">
+
             <div class="input-group">
+
                 <label>Nombres</label>
                 <input type="text" id="editUserNombres">
+
             </div>
+
             <div class="input-group">
+
                 <label>Apellidos</label>
                 <input type="text" id="editUserApellidos">
+
             </div>
+
             <div class="input-group">
+
                 <label>DNI</label>
                 <input type="text" id="editUserDni" maxlength="8">
+
             </div>
+
             <div class="input-group">
+
                 <label>Usuario (Login)</label>
                 <input type="text" id="editUserLogin">
+
             </div>
+
             <div class="input-group">
+
                 <label>Contraseña</label>
                 <input type="password" id="editUserPass" placeholder="Contraseña actual o nueva">
+
             </div>
+
             <div class="input-group">
+
                 <label>Rol</label>
                 <select id="editUserRol">
+
                     <option value="operario">Operario (Atención)</option>
                     <option value="marketing">Marketing (Campañas)</option>
                     <option value="admin">Administrador (Total)</option>
+
                 </select>
             </div>
             <br>
@@ -138,43 +201,55 @@
     </div>
 
     <script>
+
         const rol = localStorage.getItem('rolUsuario');
 
         if (!rol || rol !== 'admin') {
+
             window.location.href = 'dashboard.html';
         }
 
         async function cargarListaUsuarios() {
+
             try {
+
                 const res = await fetch('http://localhost:3000/api/usuarios');
                 const usuarios = await res.json();
                 const tbody = document.getElementById('tbodyUsuarios');
                 tbody.innerHTML = '';
 
                 usuarios.forEach(u => {
+
                     let badgeClass = 'badge-ope';
                     if(u.rol === 'admin') badgeClass = 'badge-admin';
                     if(u.rol === 'marketing') badgeClass = 'badge-mkt';
 
                     tbody.innerHTML += `
+
                         <tr>
+
                             <td>${u.dni || '-'}</td>
                             <td><strong>${u.nombres || ''} ${u.apellidos || 'Sin Nombre'}</strong></td>
                             <td>${u.usuario}</td>
                             <td><span class="badge ${badgeClass}">${u.rol}</span></td>
                             <td>
+
                                 <button class="btn-action btn-edit" onclick='abrirModalEditar(${JSON.stringify(u)})'>Editar</button>
                                 <button class="btn-action btn-delete" onclick='eliminarUsuario(${u.id})'>Borrar</button>
+
                             </td>
                         </tr>
                     `;
                 });
+
             } catch (err) {
+
                 console.error("Error al cargar credenciales:", err);
             }
         }
 
         async function registrarUsuarioColaborador() {
+
             const nombres = document.getElementById('txtNewNombres').value.trim();
             const apellidos = document.getElementById('txtNewApellidos').value.trim();
             const dni = document.getElementById('txtNewDni').value.trim();
@@ -183,32 +258,41 @@
             const rolAsignado = document.getElementById('selNewRol').value;
 
             if(!usuario || !contrasena || !nombres || !apellidos || !dni) {
+
                 return alert("Por favor, completa todos los campos del colaborador.");
             }
 
             try {
+
                 const response = await fetch('http://localhost:3000/api/usuarios', {
+
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ usuario, contrasena, rol: rolAsignado, nombres, apellidos, dni })
+
                 });
-                
+
                 const data = await response.json();
-                
+
                 if(response.ok) {
+
                     alert("🎉 Colaborador creado exitosamente.");
                     limpiarFormulario();
                     cargarListaUsuarios();
+
                 } else {
+
                     alert("❌ " + data.message);
                 }
             } catch (err) {
+
                 console.error(err);
                 alert("Error de conexión.");
             }
         }
 
         function abrirModalEditar(u) {
+
             document.getElementById('editUserId').value = u.id;
             document.getElementById('editUserNombres').value = u.nombres || '';
             document.getElementById('editUserApellidos').value = u.apellidos || '';
@@ -217,47 +301,62 @@
             document.getElementById('editUserPass').value = u.contrasena;
             document.getElementById('editUserRol').value = u.rol;
             document.getElementById('modalEditarUsuario').style.display = 'flex';
+
         }
 
         function cerrarModal() {
+
             document.getElementById('modalEditarUsuario').style.display = 'none';
         }
 
         async function guardarCambiosUsuario() {
+
             const id = document.getElementById('editUserId').value;
             const payload = {
+
                 nombres: document.getElementById('editUserNombres').value.trim(),
                 apellidos: document.getElementById('editUserApellidos').value.trim(),
                 dni: document.getElementById('editUserDni').value.trim(),
                 usuario: document.getElementById('editUserLogin').value.trim(),
                 contrasena: document.getElementById('editUserPass').value,
                 rol: document.getElementById('editUserRol').value
+
             };
 
             try {
+
                 const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
+
                 });
+
                 if(res.ok) {
                     alert("Colaborador actualizado correctamente.");
                     cerrarModal();
                     cargarListaUsuarios();
                 }
+
             } catch (err) {
+
                 console.error(err);
             }
         }
 
         async function eliminarUsuario(id) {
+
             if(!confirm("¿Está seguro de eliminar esta cuenta? El colaborador perderá inmediatamente el acceso al sistema.")) return;
             try {
+
                 const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, { method: 'DELETE' });
+
                 if(res.ok) {
                     alert("Cuenta de usuario eliminada correctamente.");
                     cargarListaUsuarios();
                 }
+
             } catch (err) {
                 console.error(err);
             }
@@ -275,7 +374,6 @@
             localStorage.clear();
             window.location.href = 'index.html';
         }
-
         window.onload = cargarListaUsuarios;
     </script>
 </body>
