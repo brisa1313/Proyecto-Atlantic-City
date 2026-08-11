@@ -5,9 +5,7 @@
 <head>
 
     <meta charset="UTF-8">
-
     <title>Login - Atlantic City</title>
-
     <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -19,9 +17,7 @@
         <div class="login-brand">
 
             <div class="logo-placeholder"></div>
-
             <h1>ATLANTIC CITY</h1>
-
             <p>Plataforma de Fidelización de Clientes</p>
 
         </div>
@@ -32,17 +28,12 @@
 
             <p>Ingresa tus credenciales para continuar</p>
 
-           
-
             <div class="input-group">
 
                 <label>Usuario</label>
-
                 <input type="text" id="txtUsuario" placeholder="usuario.atlantic">
 
             </div>
-
-           
 
             <div class="input-group">
 
@@ -52,73 +43,46 @@
 
             </div>
 
-           
-
             <p id="lblError" style="color: red; display: none;">Usuario o contraseña incorrectos</p>
 
-           
-
             <button class="btn-primary" onclick="iniciarSesion()">Ingresar</button>
-
         </div>
-
     </div>
-
-
 
     <script>
 
         async function iniciarSesion() {
 
             const usuario = document.getElementById('txtUsuario').value;
-
             const contrasena = document.getElementById('txtContrasena').value;
-
             const lblError = document.getElementById('lblError');
 
-
-
             lblError.style.display = 'none';
-
-
 
             try {
 
                 const response = await fetch('http://localhost:3000/api/login', {
 
                     method: 'POST',
-
                     headers: { 'Content-Type': 'application/json' },
-
                     body: JSON.stringify({ usuario, contrasena })
 
                 });
 
-
-
                 const data = await response.json();
-
-
 
                 if (data.success) {
 
                     // === NUEVOS CAMPOS AÑADIDOS SIN MODIFICAR LO ANTERIOR ===
 
                     localStorage.setItem('nombreUsuario', data.user.usuario);
-
                     localStorage.setItem('usuarioLogueado', data.user.usuario);
-
                     localStorage.setItem('rolUsuario', data.user.rol || data.user.role);
-
-                   
 
                     // Guardamos los nombres reales devueltos por el backend actualizado
 
                     localStorage.setItem('nombresUsuario', data.user.nombres || '');
-
                     localStorage.setItem('apellidosUsuario', data.user.apellidos || '');
-
-                   
 
                     window.location.href = 'dashboard.html';
 
@@ -135,11 +99,7 @@
                 alert("No se pudo conectar con el servidor.");
 
             }
-
         }
-
     </script>
-
 </body>
-
 </html>
